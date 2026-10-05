@@ -102,6 +102,8 @@ def show_logo():
         print(f" │{grad(line.center(42), C_CYAN, C_PINK)}│")
     subtitle = "====== ANYISP SNI HUNTER v6.0 ======".center(42)
     print(f" │{grad(subtitle, C_PINK, C_GOLD)}│")
+    author = "★ MODDED BY FORIDUL ★".center(42)
+    print(f" │{grad(author, C_GOLD, C_CYAN)}│")
     print(grad(" ╰──────────────────────────────────────────╯", C_PINK, C_CYAN))
     print(f"  \x1b[38;2;0;255;136m● MODE: PERSONAL UNLOCKED  \x1b[38;2;255;200;40m● ACCESS: LIFETIME (∞)\x1b[0m\n")
 
@@ -298,49 +300,58 @@ def export_results():
         print("\n  \x1b[38;2;240;240;240mYou can now open them in your file manager or VPN apps!\x1b[0m")
     input("\n  \x1b[38;2;0;240;255mPress Enter to return to menu...\x1b[0m")
 
-def setup_termux_shortcut():
+def auto_setup_termux():
+    try:
+        curr_dir = os.path.abspath(os.path.dirname(__file__))
+        prefix = os.environ.get('PREFIX', '')
+        if prefix and os.path.isdir(os.path.join(prefix, 'bin')):
+            for cmd_name in ('sni', 'snr'):
+                bin_path = os.path.join(prefix, 'bin', cmd_name)
+                try:
+                    with open(bin_path, 'w', encoding='utf-8') as f:
+                        f.write(f'#!/data/data/com.termux/files/usr/bin/bash\ncd "{curr_dir}" && python scanner.py "$@"\n')
+                    os.chmod(bin_path, 0o755)
+                except Exception:
+                    pass
+                
+        bashrc = os.path.expanduser('~/.bashrc')
+        try:
+            existing = ""
+            if os.path.exists(bashrc):
+                with open(bashrc, 'r', encoding='utf-8', errors='ignore') as f:
+                    existing = f.read()
+            
+            with open(bashrc, 'a', encoding='utf-8') as f:
+                if "alias sni=" not in existing:
+                    f.write(f"\nalias sni='cd \"{curr_dir}\" && python scanner.py'\n")
+                if "alias snr=" not in existing:
+                    f.write(f"alias snr='cd \"{curr_dir}\" && python scanner.py'\n")
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+def update_scanner():
     clear_screen()
     show_logo()
-    curr_dir = os.path.abspath(os.path.dirname(__file__))
-    installed = False
-    
-    prefix = os.environ.get('PREFIX', '')
-    if prefix and os.path.isdir(os.path.join(prefix, 'bin')):
-        sni_bin = os.path.join(prefix, 'bin', 'sni')
-        try:
-            with open(sni_bin, 'w', encoding='utf-8') as f:
-                f.write(f'#!/data/data/com.termux/files/usr/bin/bash\ncd "{curr_dir}" && python scanner.py "$@"\n')
-            os.chmod(sni_bin, 0o755)
-            installed = True
-            print(f"  \x1b[38;2;0;255;136m[✓] Global command created: {sni_bin}\x1b[0m")
-        except Exception as e:
-            print(f"  \x1b[38;2;255;60;60m[-] Note: Could not write directly to $PREFIX/bin: {e}\x1b[0m")
-            
-    bashrc = os.path.expanduser('~/.bashrc')
+    print("  \x1b[38;2;0;255;136m[+] Updating ANYISP Scanner from GitHub...\x1b[0m\n")
     try:
-        alias_line = f"alias sni='cd \"{curr_dir}\" && python scanner.py'\n"
-        existing = ""
-        if os.path.exists(bashrc):
-            with open(bashrc, 'r', encoding='utf-8', errors='ignore') as f:
-                existing = f.read()
-        if "alias sni=" not in existing:
-            with open(bashrc, 'a', encoding='utf-8') as f:
-                f.write(f"\n# ANYISP Scanner Shortcut\n{alias_line}")
-            installed = True
-            print(f"  \x1b[38;2;0;255;136m[✓] Alias 'sni' added to ~/.bashrc\x1b[0m")
+        import subprocess
+        result = subprocess.run(['git', 'pull'], capture_output=True, text=True)
+        if result.returncode == 0:
+            if "Already up to date." in result.stdout:
+                print(f"  \x1b[38;2;0;240;255m{result.stdout.strip()}\x1b[0m")
+            else:
+                print(f"  \x1b[38;2;0;240;255m{result.stdout.strip()}\x1b[0m")
+                print("\n  \x1b[38;2;0;255;136m[✓] Update successful! Please restart the scanner.\x1b[0m")
         else:
-            installed = True
-            print(f"  \x1b[38;2;0;255;136m[✓] Alias 'sni' is already present in ~/.bashrc\x1b[0m")
+            print(f"  \x1b[38;2;255;60;60m[-] Update failed:\x1b[0m\n{result.stderr.strip()}")
     except Exception as e:
-        print(f"  \x1b[38;2;255;60;60m[-] Could not update ~/.bashrc: {e}\x1b[0m")
-        
-    if installed:
-        print("\n  \x1b[38;2;255;200;40m⚡ Done! You can now type 'sni' from anywhere in Termux to launch.\x1b[0m")
-    else:
-        print("\n  \x1b[38;2;255;60;60m[-] Not inside Termux / Android environment.\x1b[0m")
+        print(f"  \x1b[38;2;255;60;60m[-] Error running git pull: {e}\x1b[0m")
     input("\n  \x1b[38;2;0;240;255mPress Enter to return to menu...\x1b[0m")
 
 def main():
+    auto_setup_termux()
     args = [a.lower() for a in sys.argv[1:]]
     if '--v5' in args or '-5' in args:
         run_assigned_engine(None, 'v5')
@@ -362,7 +373,7 @@ def main():
         print(" │  \x1b[38;2;255;100;200m[2]\x1b[0m \x1b[38;2;240;240;240mV5 Engine (Classic Stable)          \x1b[0m│")
         print(" │  \x1b[38;2;0;255;136m[3]\x1b[0m \x1b[38;2;240;240;240mView Scan Results (V6 / V4)         \x1b[0m│")
         print(" │  \x1b[38;2;255;200;40m[4]\x1b[0m \x1b[38;2;240;240;240mExport Results to Downloads         \x1b[0m│")
-        print(" │  \x1b[38;2;140;180;255m[5]\x1b[0m \x1b[38;2;240;240;240mSetup Termux Quick Command          \x1b[0m│")
+        print(" │  \x1b[38;2;140;180;255m[5]\x1b[0m \x1b[38;2;240;240;240mUpdate Scanner (Git Pull)           \x1b[0m│")
         print(" │  \x1b[38;2;255;60;60m[0]\x1b[0m \x1b[38;2;240;240;240mExit Session                        \x1b[0m│")
         print(grad(card_bot, C_PINK, C_CYAN))
         print()
@@ -376,7 +387,7 @@ def main():
         elif ans == '4':
             export_results()
         elif ans == '5':
-            setup_termux_shortcut()
+            update_scanner()
         elif ans in ('0', 'q', 'exit'):
             print('Exiting...')
             return
