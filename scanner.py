@@ -331,6 +331,58 @@ def auto_setup_termux():
     except Exception:
         pass
 
+def keyword_domain_finder():
+    clear_screen()
+    show_logo()
+    print("  \x1b[38;2;0;255;136m[+] Keyword Domain Finder (Powered by crt.sh)\x1b[0m\n")
+    keyword = input("  \x1b[38;2;0;240;255m❯ Enter keyword (e.g. robi): \x1b[0m").strip()
+    if not keyword:
+        return
+    
+    print(f"\n  \x1b[38;2;255;200;40m[*] Searching for domains containing '{keyword}'... Please wait.\x1b[0m")
+    try:
+        import urllib.request
+        import json
+        
+        url = f"https://crt.sh/?q=%25{keyword}%25&output=json"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        res = urllib.request.urlopen(req, timeout=30)
+        
+        if res.getcode() == 200:
+            data = json.loads(res.read())
+            domains = set()
+            for entry in data:
+                name_value = entry.get('name_value', '')
+                for domain in name_value.split('\n'):
+                    domain = domain.strip().lower()
+                    if not domain or '*' in domain:
+                        continue
+                    if keyword.lower() in domain:
+                        domains.add(domain)
+                        
+            if not domains:
+                print("  \x1b[38;2;255;60;60m[-] No domains found.\x1b[0m")
+            else:
+                print(f"  \x1b[38;2;0;255;136m[✓] Found {len(domains)} unique domains!\x1b[0m\n")
+                filename = f"{keyword}_domains.txt"
+                with open(filename, 'w', encoding='utf-8') as f:
+                    for d in sorted(domains):
+                        f.write(f"{d}\n")
+                print(f"  \x1b[38;2;240;240;240m[i] Results saved to: {filename}\x1b[0m")
+                
+                preview = list(sorted(domains))[:10]
+                for d in preview:
+                    print(f"    - {d}")
+                if len(domains) > 10:
+                    print(f"    ... and {len(domains) - 10} more.")
+        else:
+             print(f"  \x1b[38;2;255;60;60m[-] Server returned status code: {res.getcode()}\x1b[0m")
+    except Exception as e:
+        print(f"\n  \x1b[38;2;255;60;60m[-] Error fetching domains: {e}\x1b[0m")
+        print("  \x1b[38;2;240;240;240m[!] Hint: The server might be rate-limiting. Try a more specific keyword like 'robi.com.bd'\x1b[0m")
+        
+    input("\n  \x1b[38;2;0;240;255mPress Enter to return to menu...\x1b[0m")
+
 def update_scanner():
     clear_screen()
     show_logo()
@@ -373,11 +425,12 @@ def main():
         print(" │  \x1b[38;2;255;100;200m[2]\x1b[0m \x1b[38;2;240;240;240mV5 Engine (Classic Stable)          \x1b[0m│")
         print(" │  \x1b[38;2;0;255;136m[3]\x1b[0m \x1b[38;2;240;240;240mView Scan Results (V6 / V4)         \x1b[0m│")
         print(" │  \x1b[38;2;255;200;40m[4]\x1b[0m \x1b[38;2;240;240;240mExport Results to Downloads         \x1b[0m│")
-        print(" │  \x1b[38;2;140;180;255m[5]\x1b[0m \x1b[38;2;240;240;240mUpdate Scanner (Git Pull)           \x1b[0m│")
+        print(" │  \x1b[38;2;140;180;255m[5]\x1b[0m \x1b[38;2;240;240;240mKeyword Domain Finder               \x1b[0m│")
+        print(" │  \x1b[38;2;255;100;200m[6]\x1b[0m \x1b[38;2;240;240;240mUpdate Scanner (Git Pull)           \x1b[0m│")
         print(" │  \x1b[38;2;255;60;60m[0]\x1b[0m \x1b[38;2;240;240;240mExit Session                        \x1b[0m│")
         print(grad(card_bot, C_PINK, C_CYAN))
         print()
-        ans = input("\x1b[38;2;0;240;255m❯ \x1b[38;2;255;200;40mChoose option \x1b[38;2;160;160;160m[0-5, default: 1]\x1b[38;2;0;240;255m: \x1b[0m").strip()
+        ans = input("\x1b[38;2;0;240;255m❯ \x1b[38;2;255;200;40mChoose option \x1b[38;2;160;160;160m[0-6, default: 1]\x1b[38;2;0;240;255m: \x1b[0m").strip()
         if ans == '2':
             print(f"\n\x1b[38;2;0;255;136m[+] Launching V5 Engine with Lifetime Access...\x1b[0m\n")
             time.sleep(0.5)
@@ -387,6 +440,8 @@ def main():
         elif ans == '4':
             export_results()
         elif ans == '5':
+            keyword_domain_finder()
+        elif ans == '6':
             update_scanner()
         elif ans in ('0', 'q', 'exit'):
             print('Exiting...')
